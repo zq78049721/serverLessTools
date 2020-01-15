@@ -1,31 +1,6 @@
-import {escape}  from 'mysql';
 import aliRds  from 'ali-rds'
 import pageHelper from './pagerHelper';
 import co   from  'co';
-
-function mergeSqlAndProps(sql, param = {}) {
-    let result = sql;
-    let keys = Object.keys(param);
-    for (let index in keys) {
-        let value=param[keys[index]];
-        if(value && value.in){
-            let inCode=value.value.map(v=>`'${v}'`);
-            inCode=`(${inCode.join(',')})`;
-            result = result.replace(`@${keys[index]}`, inCode);
-        }else{
-            result = result.replace(`@${keys[index]}`, escape(param[keys[index]]));
-        }
-
-    }
-    return result;
-}
-
-
-function convertPagerSql(sql) {
-    let fromIndex = sql.toLowerCase().indexOf("from");
-    let pagerSql = "select count(*) as count " + sql.substring(fromIndex);
-    return pagerSql;
-}
 
 async function _query(sql,mysql){
     return await co(function*() {
@@ -35,6 +10,31 @@ async function _query(sql,mysql){
 
 function create(config){
     const mysql=aliRds(config);
+
+    function mergeSqlAndProps(sql, param = {}) {
+        let result = sql;
+        let keys = Object.keys(param);
+        for (let index in keys) {
+            let value=param[keys[index]];
+            if(value && value.in){
+                let inCode=value.value.map(v=>`'${v}'`);
+                inCode=`(${inCode.join(',')})`;
+                result = result.replace(`@${keys[index]}`, inCode);
+            }else{
+                result = result.replace(`@${keys[index]}`, mysql.escape(param[keys[index]]));
+            }
+    
+        }
+        return result;
+    }
+    
+    
+    function convertPagerSql(sql) {
+        let fromIndex = sql.toLowerCase().indexOf("from");
+        let pagerSql = "select count(*) as count " + sql.substring(fromIndex);
+        return pagerSql;
+    }
+
     
     async function select(sql,params={},pager={}){
         const { limit, offset } = pageHelper.createQuery(pager);

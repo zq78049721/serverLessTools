@@ -5,7 +5,6 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 var moment = _interopDefault(require('moment'));
 var fs = _interopDefault(require('fs'));
 var path = _interopDefault(require('path'));
-var mysql = require('mysql');
 var aliRds = _interopDefault(require('ali-rds'));
 var co = _interopDefault(require('co'));
 
@@ -89,30 +88,6 @@ var respHelper = {
     }
 };
 
-function mergeSqlAndProps(sql, param = {}) {
-    let result = sql;
-    let keys = Object.keys(param);
-    for (let index in keys) {
-        let value=param[keys[index]];
-        if(value && value.in){
-            let inCode=value.value.map(v=>`'${v}'`);
-            inCode=`(${inCode.join(',')})`;
-            result = result.replace(`@${keys[index]}`, inCode);
-        }else{
-            result = result.replace(`@${keys[index]}`, mysql.escape(param[keys[index]]));
-        }
-
-    }
-    return result;
-}
-
-
-function convertPagerSql(sql) {
-    let fromIndex = sql.toLowerCase().indexOf("from");
-    let pagerSql = "select count(*) as count " + sql.substring(fromIndex);
-    return pagerSql;
-}
-
 async function _query(sql,mysql){
     return await co(function*() {
       return yield mysql.query(sql);
@@ -121,6 +96,31 @@ async function _query(sql,mysql){
 
 function create(config){
     const mysql=aliRds(config);
+
+    function mergeSqlAndProps(sql, param = {}) {
+        let result = sql;
+        let keys = Object.keys(param);
+        for (let index in keys) {
+            let value=param[keys[index]];
+            if(value && value.in){
+                let inCode=value.value.map(v=>`'${v}'`);
+                inCode=`(${inCode.join(',')})`;
+                result = result.replace(`@${keys[index]}`, inCode);
+            }else{
+                result = result.replace(`@${keys[index]}`, mysql.escape(param[keys[index]]));
+            }
+    
+        }
+        return result;
+    }
+    
+    
+    function convertPagerSql(sql) {
+        let fromIndex = sql.toLowerCase().indexOf("from");
+        let pagerSql = "select count(*) as count " + sql.substring(fromIndex);
+        return pagerSql;
+    }
+
     
     async function select(sql,params={},pager={}){
         const { limit, offset } = pagerHelper.createQuery(pager);
@@ -206,12 +206,19 @@ function create(config){
     }
 }
 
+function readSql(path){
+    return fs.readFileSync(path,{
+        encoding:'utf8'
+    })
+}
+
 var index = {
     dateHelper,
     getSql,
     pagerHelper,
     respHelper,
-    sqlQuery: create
+    sqlQuery: create,
+    readSql
 };
 
 module.exports = index;
