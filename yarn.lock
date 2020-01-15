@@ -127,6 +127,11 @@ mysql@^2.13.0:
     safe-buffer "5.1.2"
     sqlstring "2.3.1"
 
+node-fetch@2.6.0:
+  version "2.6.0"
+  resolved "http://npm.skytech.cn/node-fetch/-/node-fetch-2.6.0.tgz#e633456386d4aa55863f676a7ab0daa8fdecb0fd"
+  integrity sha1-5jNFY4bUqlWGP2dqerDaqP3ssP0=
+
 path-parse@^1.0.6:
   version "1.0.6"
   resolved "http://npm.skytech.cn/path-parse/-/path-parse-1.0.6.tgz#d62dbb5679405d72c4737ec58600e9ddcf06d24c"

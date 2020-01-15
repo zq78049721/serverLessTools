@@ -5,6 +5,7 @@ import respHelper from './src/respHelper'
 import sqlQuery from './src/sqlQuery'
 import readSql from './src/readSql'
 import getBody from './src/getBody'
+import curl from './src/curl'
 
 export default {
     dateHelper,
@@ -13,5 +14,6 @@ export default {
     respHelper,
     createMysql:sqlQuery,
     readSql,
-    getBody
+    getBody,
+    curl
 }

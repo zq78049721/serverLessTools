@@ -7,6 +7,7 @@ var fs = _interopDefault(require('fs'));
 var path = _interopDefault(require('path'));
 var aliRds = _interopDefault(require('ali-rds'));
 var co = _interopDefault(require('co'));
+var fetch = _interopDefault(require('node-fetch'));
 
 var dateHelper = {
     currentDate(){
@@ -220,11 +221,61 @@ async function getBody(req) {
             if (err) {
                 r2(err);
             } else {
-                const jsonData=JSON.parse(new Buffer(data).toString());
+                const jsonData = JSON.parse(new Buffer(data).toString());
                 r1(jsonData);
             }
         });
     })
+}
+
+function urlMerage(url, urlParams) {
+    if (!urlParams || urlParams.length <= 0) {
+        return url;
+    }
+    let paramsArray = [];
+    for (let key in urlParams) {
+        let value = urlParams[key];
+        paramsArray.push(`${key}=${encodeURI(value)}`);
+    }
+    return `${url}?${paramsArray.join('&')}`;
+}
+
+async function reqeusting(url, params = { method: "GET" }) {
+    return fetch(url, {
+        contentType: 'json',
+        ...params
+    }).then(async res =>{
+        const data=await res.json();
+        return {
+            status:res.status,
+            data
+        };
+    });
+}
+
+function create$1() {
+    async function get({ url, urlParams }) {
+        return reqeusting(urlMerage(url, urlParams), {
+            method: 'GET',
+        })
+    }
+    async function post({ url, data, urlParams }) {
+        return reqeusting(urlMerage(url, urlParams), {
+            method: 'POST',
+            data
+        })
+    }
+    async function put({ url, data, urlParams }) {
+        return reqeusting(urlMerage(url, urlParams), {
+            method: 'PUT',
+            data
+        })
+    }
+    return {
+        get,
+        post,
+        put
+    }
 }
 
 var index = {
@@ -234,7 +285,8 @@ var index = {
     respHelper,
     createMysql:create,
     readSql,
-    getBody
+    getBody,
+    curl: create$1
 };
 
 module.exports = index;
