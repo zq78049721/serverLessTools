@@ -217,7 +217,7 @@ var index = {
     getSql,
     pagerHelper,
     respHelper,
-    sqlQuery: create,
+    createMysql:create,
     readSql
 };
 

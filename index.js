@@ -10,6 +10,6 @@ export default {
     getSql,
     pagerHelper,
     respHelper,
-    sqlQuery,
+    createMysql:sqlQuery,
     readSql
 }
