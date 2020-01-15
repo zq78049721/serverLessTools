@@ -4,6 +4,7 @@ import pagerHelper from './src/pagerHelper'
 import respHelper from './src/respHelper'
 import sqlQuery from './src/sqlQuery'
 import readSql from './src/readSql'
+import getBody from './src/getBody'
 
 export default {
     dateHelper,
@@ -11,5 +12,6 @@ export default {
     pagerHelper,
     respHelper,
     createMysql:sqlQuery,
-    readSql
+    readSql,
+    getBody
 }

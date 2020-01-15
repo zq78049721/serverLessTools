@@ -212,13 +212,29 @@ function readSql(path){
     })
 }
 
+const getRawBody = require('raw-body');
+
+async function getBody(req) {
+    return new Promise((r1, r2) => {
+        getRawBody(req, function (err, data) {
+            if (err) {
+                r2(err);
+            } else {
+                const jsonData=JSON.parse(new Buffer(data).toString());
+                r1(jsonData);
+            }
+        });
+    })
+}
+
 var index = {
     dateHelper,
     getSql,
     pagerHelper,
     respHelper,
     createMysql:create,
-    readSql
+    readSql,
+    getBody
 };
 
 module.exports = index;
