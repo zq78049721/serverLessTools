@@ -9,7 +9,7 @@ export default {
         return moment().format("HH");
     },
 
-    convertDate(obj){
-        return moment(obj).format("YYYY-MM-DD")
+    convertDate(obj,format){
+        return moment(obj).format(format || "YYYY-MM-DD")
     }
 }

@@ -18,8 +18,8 @@ var dateHelper = {
         return moment().format("HH");
     },
 
-    convertDate(obj){
-        return moment(obj).format("YYYY-MM-DD")
+    convertDate(obj,format){
+        return moment(obj).format(format || "YYYY-MM-DD")
     }
 };
 
@@ -85,6 +85,18 @@ var respHelper = {
         setBody(resp,{
             items,
             pager
+        });
+    },
+    error400(resp,errorMessage){
+        resp.setStatusCode(400);
+        setBody(resp,{
+            errorMessage
+        });
+    },
+    error401(resp){
+        resp.setStatusCode(401);
+        setBody(resp,{
+            errorMessage:"没有权限"
         });
     }
 };
@@ -278,6 +290,85 @@ function create$1() {
     }
 }
 
+const { error401 } = respHelper;
+
+class MidWare {
+    constructor(props) {
+        this.methods = Array.from(props.methods);
+        this.ctx = props.ctx;
+    }
+
+    async next() {
+        let next = this.methods.shift();
+        next(this.ctx, this.next.bind(this));
+    }
+}
+
+
+function authorization(is) {
+    return async function ({ req, resp, context }, next) {
+        const headers = req.headers;
+        const { authorization } = headers;
+        if (authorization == is) {
+            next();
+        } else {
+            error401(resp);
+        }
+    }
+
+}
+
+
+function createHandler(methods) {
+    return async function (req, resp, context) {
+        const mw = new MidWare({
+            methods,
+            ctx: {
+                req,
+                resp,
+                context
+            }
+        });
+        await mw.next();
+    }
+}
+
+var HttpHelper = {
+    createHandler,
+    authorization
+};
+
+function isEmpty(value){
+    return value==undefined || value==null;
+}
+
+function isSomeEmpty(values){
+    for(let index in values){
+        let value=values[index];
+        if(isEmpty(value)){
+            return true;
+        }
+    }
+    return false;
+}
+
+function isAllEmpty(values){
+    for(let index in values){
+        let value=values[index];
+        if(!isEmpty(value)){
+            return false;
+        }
+    }
+    return true;
+}
+
+
+var emptyHelper = {
+    isEmpty,
+    isSomeEmpty,
+    isAllEmpty
+};
+
 var index = {
     dateHelper,
     getSql,
@@ -286,7 +377,9 @@ var index = {
     createMysql:create,
     readSql,
     getBody,
-    curl: create$1
+    curl: create$1,
+    HttpHelper,
+    emptyHelper
 };
 
 module.exports = index;
