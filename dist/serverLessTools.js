@@ -257,7 +257,13 @@ async function reqeusting(url, params = { method: "GET" }) {
         contentType: 'json',
         ...params
     }).then(async res =>{
-        const data=await res.json();
+        let data=null;
+        if(params.toText){
+            data=await res.text();
+        }else{
+            data=await res.json();
+        }
+        // const data=await res.json();
         return {
             status:res.status,
             data
@@ -266,21 +272,27 @@ async function reqeusting(url, params = { method: "GET" }) {
 }
 
 function create$1() {
-    async function get({ url, urlParams }) {
+    async function get({ url, urlParams,headers,toText }) {
         return reqeusting(urlMerage(url, urlParams), {
             method: 'GET',
+            headers,
+            toText
         })
     }
-    async function post({ url, data, urlParams }) {
+    async function post({ url, data, urlParams,headers,toText }) {
         return reqeusting(urlMerage(url, urlParams), {
             method: 'POST',
-            data
+            body:JSON.stringify(data),
+            headers,
+            toText
         })
     }
-    async function put({ url, data, urlParams }) {
+    async function put({ url, data, urlParams,headers,toText }) {
         return reqeusting(urlMerage(url, urlParams), {
             method: 'PUT',
-            data
+            body:JSON.stringify(data),
+            headers,
+            toText
         })
     }
     return {
