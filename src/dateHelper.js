@@ -1,15 +1,15 @@
 import moment from 'moment';
-
+moment.locale('zh-cn');
 export default {
     currentDate(){
-        return moment().format("YYYY-MM-DD");
+        return moment().utcOffset(8).format("YYYY-MM-DD");
     },
 
     currentHour(){
-        return moment().format("HH");
+        return moment().utcOffset(8).format("HH");
     },
 
     convertDate(obj,format){
-        return moment(obj).format(format || "YYYY-MM-DD")
+        return moment(obj).utcOffset(8).format(format || "YYYY-MM-DD")
     }
 }

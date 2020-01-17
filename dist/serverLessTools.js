@@ -9,17 +9,18 @@ var aliRds = _interopDefault(require('ali-rds'));
 var co = _interopDefault(require('co'));
 var fetch = _interopDefault(require('node-fetch'));
 
+moment.locale('zh-cn');
 var dateHelper = {
     currentDate(){
-        return moment().format("YYYY-MM-DD");
+        return moment().utcOffset(8).format("YYYY-MM-DD");
     },
 
     currentHour(){
-        return moment().format("HH");
+        return moment().utcOffset(8).format("HH");
     },
 
     convertDate(obj,format){
-        return moment(obj).format(format || "YYYY-MM-DD")
+        return moment(obj).utcOffset(8).format(format || "YYYY-MM-DD")
     }
 };
 
