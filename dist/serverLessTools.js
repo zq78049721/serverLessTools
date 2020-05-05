@@ -416,7 +416,7 @@ WXBizDataCrypt.prototype.decryptData = function (encryptedData, iv) {
 };
 
 const {get}=create$1();
-async function getUserInfo({wxURL,appid,secret,js_code,encryptedData,signature}){
+async function getUserInfo({wxURL,appid,secret,js_code,encryptedData,iv}){
     let sessionData=await get({
         url:wxURL,
         urlParams:{
@@ -428,8 +428,8 @@ async function getUserInfo({wxURL,appid,secret,js_code,encryptedData,signature})
     });
     let session_key=sessionData.data.session_key;
     let pc = new WXBizDataCrypt(appid, session_key);
-    var data = pc.decryptData(encryptedData , signature);
-    return data;
+    var data = pc.decryptData(encryptedData , iv);
+    return [data,session_key];
 }
 
 var wxServe = {
