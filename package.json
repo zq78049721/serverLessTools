@@ -12,9 +12,12 @@
   "dependencies": {
     "moment":"^2.24.0",
     "ali-rds":"^3.3.0",
-    "co":"^4.6.0"
+    "co":"^4.6.0",
+    "node-fetch": "2.6.0"
   },
   "devDependencies": {
-    "rollup": "1.29.0"
+    "rollup": "1.29.0",
+    "rollup-plugin-node-resolve":"^5.2.0",
+    "rollup-plugin-commonjs":"^10.1.0"
   }
 }

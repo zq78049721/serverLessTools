@@ -5,21 +5,23 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 var moment = _interopDefault(require('moment'));
 var fs = _interopDefault(require('fs'));
 var path = _interopDefault(require('path'));
-var mysql = require('mysql');
 var aliRds = _interopDefault(require('ali-rds'));
 var co = _interopDefault(require('co'));
+var fetch = _interopDefault(require('node-fetch'));
+var crypto = _interopDefault(require('crypto'));
 
+moment.locale('zh-cn');
 var dateHelper = {
     currentDate(){
-        return moment().format("YYYY-MM-DD");
+        return moment().utcOffset(8).format("YYYY-MM-DD");
     },
 
     currentHour(){
-        return moment().format("HH");
+        return moment().utcOffset(8).format("HH");
     },
 
-    convertDate(obj){
-        return moment(obj).format("YYYY-MM-DD")
+    convertDate(obj,format){
+        return moment(obj).utcOffset(8).format(format || "YYYY-MM-DD")
     }
 };
 
@@ -86,32 +88,20 @@ var respHelper = {
             items,
             pager
         });
+    },
+    error400(resp,errorMessage){
+        resp.setStatusCode(400);
+        setBody(resp,{
+            errorMessage
+        });
+    },
+    error401(resp){
+        resp.setStatusCode(401);
+        setBody(resp,{
+            errorMessage:"没有权限"
+        });
     }
 };
-
-function mergeSqlAndProps(sql, param = {}) {
-    let result = sql;
-    let keys = Object.keys(param);
-    for (let index in keys) {
-        let value=param[keys[index]];
-        if(value && value.in){
-            let inCode=value.value.map(v=>`'${v}'`);
-            inCode=`(${inCode.join(',')})`;
-            result = result.replace(`@${keys[index]}`, inCode);
-        }else{
-            result = result.replace(`@${keys[index]}`, mysql.escape(param[keys[index]]));
-        }
-
-    }
-    return result;
-}
-
-
-function convertPagerSql(sql) {
-    let fromIndex = sql.toLowerCase().indexOf("from");
-    let pagerSql = "select count(*) as count " + sql.substring(fromIndex);
-    return pagerSql;
-}
 
 async function _query(sql,mysql){
     return await co(function*() {
@@ -121,6 +111,31 @@ async function _query(sql,mysql){
 
 function create(config){
     const mysql=aliRds(config);
+
+    function mergeSqlAndProps(sql, param = {}) {
+        let result = sql;
+        let keys = Object.keys(param);
+        for (let index in keys) {
+            let value=param[keys[index]];
+            if(value && value.in){
+                let inCode=value.value.map(v=>`'${v}'`);
+                inCode=`(${inCode.join(',')})`;
+                result = result.replace(`@${keys[index]}`, inCode);
+            }else{
+                result = result.replace(`@${keys[index]}`, mysql.escape(param[keys[index]]));
+            }
+    
+        }
+        return result;
+    }
+    
+    
+    function convertPagerSql(sql) {
+        let fromIndex = sql.toLowerCase().indexOf("from");
+        let pagerSql = "select count(*) as count " + sql.substring(fromIndex);
+        return pagerSql;
+    }
+
     
     async function select(sql,params={},pager={}){
         const { limit, offset } = pagerHelper.createQuery(pager);
@@ -206,12 +221,234 @@ function create(config){
     }
 }
 
+function readSql(path){
+    return fs.readFileSync(path,{
+        encoding:'utf8'
+    })
+}
+
+const getRawBody = require('raw-body');
+
+async function getBody(req) {
+    return new Promise((r1, r2) => {
+        getRawBody(req, function (err, data) {
+            if (err) {
+                r2(err);
+            } else {
+                const jsonData = JSON.parse(new Buffer(data).toString());
+                r1(jsonData);
+            }
+        });
+    })
+}
+
+function urlMerage(url, urlParams) {
+    if (!urlParams || urlParams.length <= 0) {
+        return url;
+    }
+    let paramsArray = [];
+    for (let key in urlParams) {
+        let value = urlParams[key];
+        paramsArray.push(`${key}=${encodeURI(value)}`);
+    }
+    return `${url}?${paramsArray.join('&')}`;
+}
+
+async function reqeusting(url, params = { method: "GET" }) {
+    return fetch(url, {
+        contentType: 'json',
+        ...params
+    }).then(async res =>{
+        let data=null;
+        if(params.toText){
+            data=await res.text();
+        }else{
+            data=await res.json();
+        }
+        // const data=await res.json();
+        return {
+            status:res.status,
+            data
+        };
+    });
+}
+
+function create$1() {
+    async function get({ url, urlParams,headers,toText }) {
+        return reqeusting(urlMerage(url, urlParams), {
+            method: 'GET',
+            headers,
+            toText
+        })
+    }
+    async function post({ url, data, urlParams,headers,toText }) {
+        return reqeusting(urlMerage(url, urlParams), {
+            method: 'POST',
+            body:JSON.stringify(data),
+            headers,
+            toText
+        })
+    }
+    async function put({ url, data, urlParams,headers,toText }) {
+        return reqeusting(urlMerage(url, urlParams), {
+            method: 'PUT',
+            body:JSON.stringify(data),
+            headers,
+            toText
+        })
+    }
+    return {
+        get,
+        post,
+        put
+    }
+}
+
+const { error401 } = respHelper;
+
+class MidWare {
+    constructor(props) {
+        this.methods = Array.from(props.methods);
+        this.ctx = props.ctx;
+    }
+
+    async next() {
+        let next = this.methods.shift();
+        next(this.ctx, this.next.bind(this));
+    }
+}
+
+
+function authorization(is) {
+    return async function ({ req, resp, context }, next) {
+        const headers = req.headers;
+        const { authorization } = headers;
+        if (authorization == is) {
+            next();
+        } else {
+            error401(resp);
+        }
+    }
+
+}
+
+
+function createHandler(methods) {
+    return async function (req, resp, context) {
+        const mw = new MidWare({
+            methods,
+            ctx: {
+                req,
+                resp,
+                context
+            }
+        });
+        await mw.next();
+    }
+}
+
+var HttpHelper = {
+    createHandler,
+    authorization
+};
+
+function isEmpty(value){
+    return value==undefined || value==null;
+}
+
+function isSomeEmpty(values){
+    for(let index in values){
+        let value=values[index];
+        if(isEmpty(value)){
+            return true;
+        }
+    }
+    return false;
+}
+
+function isAllEmpty(values){
+    for(let index in values){
+        let value=values[index];
+        if(!isEmpty(value)){
+            return false;
+        }
+    }
+    return true;
+}
+
+
+var emptyHelper = {
+    isEmpty,
+    isSomeEmpty,
+    isAllEmpty
+};
+
+function WXBizDataCrypt(appId, sessionKey) {
+  this.appId = appId;
+  this.sessionKey = sessionKey;
+}
+
+WXBizDataCrypt.prototype.decryptData = function (encryptedData, iv) {
+  // base64 decode
+  var sessionKey = new Buffer(this.sessionKey, 'base64');
+  encryptedData = new Buffer(encryptedData, 'base64');
+  iv = new Buffer(iv, 'base64');
+
+  try {
+     // 解密
+    var decipher = crypto.createDecipheriv('aes-128-cbc', sessionKey, iv);
+    // 设置自动 padding 为 true，删除填充补位
+    decipher.setAutoPadding(true);
+    var decoded = decipher.update(encryptedData, 'binary', 'utf8');
+    decoded += decipher.final('utf8');
+    
+    decoded = JSON.parse(decoded);
+
+  } catch (err) {
+    throw new Error('Illegal Buffer')
+  }
+
+  if (decoded.watermark.appid !== this.appId) {
+    throw new Error('Illegal Buffer')
+  }
+
+  return decoded
+};
+
+const {get}=create$1();
+async function getUserInfo({wxURL,appid,secret,js_code,encryptedData,iv}){
+    let sessionData=await get({
+        url:wxURL,
+        urlParams:{
+            appid,
+            grant_type:'authorization_code',
+            js_code,
+            secret
+        }
+    });
+    let session_key=sessionData.data.session_key;
+    let pc = new WXBizDataCrypt(appid, session_key);
+    var data = pc.decryptData(encryptedData , iv);
+    return [data,session_key];
+}
+
+var wxServe = {
+    getUserInfo,
+    wxAPI:'https://api.weixin.qq.com/sns/jscode2session'
+};
+
 var index = {
     dateHelper,
     getSql,
     pagerHelper,
     respHelper,
-    sqlQuery: create
+    createMysql:create,
+    readSql,
+    getBody,
+    curl: create$1,
+    HttpHelper,
+    emptyHelper,
+    wxServe
 };
 
 module.exports = index;

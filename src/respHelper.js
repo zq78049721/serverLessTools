@@ -25,5 +25,17 @@ export default {
             items,
             pager
         });
+    },
+    error400(resp,errorMessage){
+        resp.setStatusCode(400);
+        setBody(resp,{
+            errorMessage
+        });
+    },
+    error401(resp){
+        resp.setStatusCode(401);
+        setBody(resp,{
+            errorMessage:"没有权限"
+        });
     }
 }
