@@ -8,6 +8,7 @@ import getBody from './src/getBody'
 import curl from './src/curl'
 import HttpHelper from './src/createHttpHandler'
 import emptyHelper from './src/emptyHelper'
+import wxServe from './src/wxServe'
 
 export default {
     dateHelper,
@@ -19,5 +20,6 @@ export default {
     getBody,
     curl,
     HttpHelper,
-    emptyHelper
+    emptyHelper,
+    wxServe
 }

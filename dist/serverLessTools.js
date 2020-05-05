@@ -8,6 +8,7 @@ var path = _interopDefault(require('path'));
 var aliRds = _interopDefault(require('ali-rds'));
 var co = _interopDefault(require('co'));
 var fetch = _interopDefault(require('node-fetch'));
+var crypto = _interopDefault(require('crypto'));
 
 moment.locale('zh-cn');
 var dateHelper = {
@@ -382,6 +383,60 @@ var emptyHelper = {
     isAllEmpty
 };
 
+function WXBizDataCrypt(appId, sessionKey) {
+  this.appId = appId;
+  this.sessionKey = sessionKey;
+}
+
+WXBizDataCrypt.prototype.decryptData = function (encryptedData, iv) {
+  // base64 decode
+  var sessionKey = new Buffer(this.sessionKey, 'base64');
+  encryptedData = new Buffer(encryptedData, 'base64');
+  iv = new Buffer(iv, 'base64');
+
+  try {
+     // 解密
+    var decipher = crypto.createDecipheriv('aes-128-cbc', sessionKey, iv);
+    // 设置自动 padding 为 true，删除填充补位
+    decipher.setAutoPadding(true);
+    var decoded = decipher.update(encryptedData, 'binary', 'utf8');
+    decoded += decipher.final('utf8');
+    
+    decoded = JSON.parse(decoded);
+
+  } catch (err) {
+    throw new Error('Illegal Buffer')
+  }
+
+  if (decoded.watermark.appid !== this.appId) {
+    throw new Error('Illegal Buffer')
+  }
+
+  return decoded
+};
+
+const {get}=create$1();
+async function getUserInfo({wxURL,appid,secret,js_code,encryptedData,signature}){
+    let sessionData=await get({
+        url:wxURL,
+        urlParams:{
+            appid,
+            grant_type:'authorization_code',
+            js_code,
+            secret
+        }
+    });
+    let session_key=sessionData.data.session_key;
+    let pc = new WXBizDataCrypt(appid, session_key);
+    var data = pc.decryptData(encryptedData , signature);
+    return data;
+}
+
+var wxServe = {
+    getUserInfo,
+    wxAPI:'https://api.weixin.qq.com/sns/jscode2session'
+};
+
 var index = {
     dateHelper,
     getSql,
@@ -392,7 +447,8 @@ var index = {
     getBody,
     curl: create$1,
     HttpHelper,
-    emptyHelper
+    emptyHelper,
+    wxServe
 };
 
 module.exports = index;
