@@ -2,7 +2,8 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var moment = _interopDefault(require('moment'));
+var moment = require('moment');
+var moment__default = _interopDefault(moment);
 var fs = _interopDefault(require('fs'));
 var path = _interopDefault(require('path'));
 var aliRds = _interopDefault(require('ali-rds'));
@@ -10,18 +11,30 @@ var co = _interopDefault(require('co'));
 var fetch = _interopDefault(require('node-fetch'));
 var crypto = _interopDefault(require('crypto'));
 
-moment.locale('zh-cn');
+moment__default.locale('zh-cn');
 var dateHelper = {
     currentDate(){
-        return moment().utcOffset(8).format("YYYY-MM-DD");
+        return moment__default().utcOffset(8).format("YYYY-MM-DD");
     },
 
     currentHour(){
-        return moment().utcOffset(8).format("HH");
+        return moment__default().utcOffset(8).format("HH");
     },
 
     convertDate(obj,format){
-        return moment(obj).utcOffset(8).format(format || "YYYY-MM-DD")
+        let date= obj?moment__default().utcOffset(8):moment__default(obj);
+        return date.format(format || "YYYY-MM-DD");
+    },
+
+    create(str){
+        return str?moment__default(str):moment__default()
+    },
+    duration(value){
+        return moment__default.duration(value);
+    },
+    howLong(value,type){
+        let d= this.create()-this.create(value);
+        return moment__default.duration(d).as(type);
     }
 };
 
@@ -333,14 +346,19 @@ function authorization(is) {
 }
 
 
-function createHandler(methods) {
+function createHandler(methods,needBody) {
     return async function (req, resp, context) {
+        let body=null;
+        if(needBody){
+            body=await getBody(req);
+        }
         const mw = new MidWare({
             methods,
             ctx: {
                 req,
                 resp,
-                context
+                context,
+                body
             }
         });
         await mw.next();

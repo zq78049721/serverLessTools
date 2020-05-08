@@ -1,4 +1,5 @@
 import respHelper from './respHelper';
+import getBody from './getBody'
 const { error401 } = respHelper;
 
 class MidWare {
@@ -28,14 +29,19 @@ function authorization(is) {
 }
 
 
-function createHandler(methods) {
+function createHandler(methods,needBody) {
     return async function (req, resp, context) {
+        let body=null;
+        if(needBody){
+            body=await getBody(req);
+        }
         const mw = new MidWare({
             methods,
             ctx: {
                 req,
                 resp,
-                context
+                context,
+                body
             }
         })
         await mw.next();

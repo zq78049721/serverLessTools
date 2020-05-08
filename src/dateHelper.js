@@ -1,4 +1,4 @@
-import moment from 'moment';
+import moment, { duration } from 'moment';
 moment.locale('zh-cn');
 export default {
     currentDate(){
@@ -10,6 +10,18 @@ export default {
     },
 
     convertDate(obj,format){
-        return moment(obj).utcOffset(8).format(format || "YYYY-MM-DD")
+        let date= obj?moment().utcOffset(8):moment(obj);
+        return date.format(format || "YYYY-MM-DD");
+    },
+
+    create(str){
+        return str?moment(str):moment()
+    },
+    duration(value){
+        return moment.duration(value);
+    },
+    howLong(value,type){
+        let d= this.create()-this.create(value);
+        return moment.duration(d).as(type);
     }
 }
