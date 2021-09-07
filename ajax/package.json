@@ -1,0 +1,17 @@
+{
+  "name": "zhuqing_ajax",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./index.js",
+  "scripts": {
+    "build": "rollup -c --environment INCLUDE_DEPS,BUILD:production",
+    "build:dev": "rollup -c --environment INCLUDE_DEPS,BUILD:development"
+  },
+  "author": "zhuqing",
+  "license": "ISC",
+  "devDependencies": {
+    "rollup": "1.29.0",
+    "rollup-plugin-node-resolve":"^5.2.0",
+    "rollup-plugin-commonjs":"^10.1.0"
+  }
+}
