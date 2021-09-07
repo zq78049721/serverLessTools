@@ -1,13 +1,13 @@
 'use strict';
 
-const urlReg = new RegExp("\{[^\}]+\}", "g");
+const urlReg = new RegExp("\\{[^\\}]+\\}", "g");
 
 function urlReplace(url, pathParams) {
     if (!pathParams) {
         return url;
     }
     return url.replaceAll(urlReg, function (value) {
-        const propName = value.replace("\{", "").replace("\}");
+        const propName = value.replace("{", "").replace("}","");
         return pathParams[propName];
     })
 }
@@ -34,9 +34,9 @@ function handlerList() {
     }
 
     async function intercept() {
-        const result = arguments[0];
+        let result = arguments[0];
         for (let index in list) {
-            result = await list[i](result, arguments[1]) || result;
+            result = await list[index](result, arguments[1]) || result;
         }
         return result
     }
@@ -82,7 +82,7 @@ function create(fetch){
 }
 
 function createFetch({ requestIntercept, responseIntercept, $http }) {
-    return async function fetch(url, method, pathParams, urlParams, bodyParams, headers) {
+    return async function fetch({url, method, pathParams, urlParams, bodyParams, headers}) {
         let fullUrl = urlReplace(url, pathParams);
         if (urlParams) {
             fullUrl += jsonToUrlParams(urlParams);

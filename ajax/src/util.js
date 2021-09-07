@@ -1,11 +1,11 @@
-const urlReg = new RegExp("\{[^\}]+\}", "g");
+const urlReg = new RegExp("\\{[^\\}]+\\}", "g");
 
 export function urlReplace(url, pathParams) {
     if (!pathParams) {
         return url;
     }
     return url.replaceAll(urlReg, function (value) {
-        const propName = value.replace("\{", "").replace("\}");
+        const propName = value.replace("{", "").replace("}","");
         return pathParams[propName];
     })
 }

@@ -9,9 +9,9 @@ function handlerList() {
     }
 
     async function intercept() {
-        const result = arguments[0];
+        let result = arguments[0];
         for (let index in list) {
-            result = await list[i](result, arguments[1]) || result;
+            result = await list[index](result, arguments[1]) || result;
         }
         return result
     }
