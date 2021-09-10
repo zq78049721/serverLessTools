@@ -21,7 +21,13 @@ function createFetch({ requestIntercept, responseIntercept, $http }) {
 
         config = await requestIntercept(config)
 
-        let response = await $http(config)
+        let response = null;
+        try {
+            response = await $http(config);
+        } catch (error) {
+            response = error.response;
+        }
+
 
         // 响应拦截器
         response = await responseIntercept(response, config)
