@@ -3,7 +3,7 @@ import interceptCreate from './interceptor'
 import methodsCreate from './methods'
 
 function createFetch({ requestIntercept, responseIntercept, $http }) {
-    return async function fetch({url, method, pathParams, urlParams, bodyParams, headers}) {
+    return async function fetch({ url, method, pathParams, urlParams, bodyParams, headers }) {
         let fullUrl = urlReplace(url, pathParams);
         if (urlParams) {
             fullUrl += jsonToUrlParams(urlParams);
